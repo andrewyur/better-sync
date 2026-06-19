@@ -16,6 +16,7 @@ Uses a last-write-wins synchronization model, based on file modified timestamps.
 
 ## TODO
 
+- [ ] Server/Client: better handling for folders
 - [ ] Server: add port selection, read from config file & env vars
 - [ ] Server: secret based auth & tls
 - [ ] Client: sync on lost focus, app load

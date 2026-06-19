@@ -1,0 +1,22 @@
+{
+  "name": "better-sync-plugin",
+  "version": "0.0.1",
+  "description": "obsidian plugin for better-sync",
+  "homepage": "https://github.com/andrewyur/better-sync#readme",
+  "license": "MIT",
+  "author": "Andrew Yurovchak",
+  "main": "src/main.ts",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "dependencies": {
+    "@vue/reactivity": "^3.5.38",
+    "obsidian": "^1.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "better-sync",
+  "name": "Better Sync",
+  "version": "0.0.1",
+  "minAppVersion": "1.0.0",
+  "description": "Simple & Easy self-hosted sync",
+  "author": "Andrew Yurovchak",
+  "authorUrl": "https://baetylboy.biz",
+  "isDesktopOnly": false
+}

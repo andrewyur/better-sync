@@ -16,13 +16,13 @@ Uses a last-write-wins synchronization model, based on file modified timestamps.
 
 ## TODO
 
--[ ] Server: add port selection, read from config file & env vars
--[ ] Server: secret based auth & tls
--[ ] Client: sync on lost focus, app load
--[ ] Client: command for syncing
--[ ] Client: settings page, configure server url and sync frequency
--[ ] Client: widget indicating when syncing, sync status
--[ ] Client: remove specific paths from esbuild config
--[ ] Publish plugin
--[ ] Publish docker image
--[ ] flesh out readme
+- [ ] Server: add port selection, read from config file & env vars
+- [ ] Server: secret based auth & tls
+- [ ] Client: sync on lost focus, app load
+- [ ] Client: command for syncing
+- [ ] Client: settings page, configure server url and sync frequency
+- [ ] Client: widget indicating when syncing, sync status
+- [ ] Client: remove specific paths from esbuild config
+- [ ] Publish plugin
+- [ ] Publish docker image
+- [ ] flesh out readme

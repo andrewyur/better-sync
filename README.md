@@ -17,7 +17,7 @@ Uses a last-write-wins synchronization model, based on file modification timesta
 ## TODO
 
 - [x] Server/Client: better handling for folders
-- [ ] Server/Client: clean up code
+- [x] Server/Client: clean up code
 - [ ] Server: test tombstone removal
 - [ ] Server: add port selection, read from config file & env vars
 - [ ] Server: secret based auth & tls

@@ -3,8 +3,6 @@ import { Config, SetupModal, DEFAULT_CONFIG } from "./setup";
 import { reactive, Reactive, watch } from "@vue/reactivity";
 import { sync } from "./sync";
 
-// full sync with server
-
 export default class SimpleSync extends Plugin {
   config!: Reactive<Config>
   timer!: NodeJS.Timeout

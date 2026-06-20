@@ -38,9 +38,13 @@ export async function sync(app: App, config: Reactive<Config>) {
     if(clientFile) {
       if (serverFile.deleted) {
         if (clientFile.modifiedAt > serverFile.modifiedAt) {
+          if (clientFile.dir) {
+            ops.push(uploadDir(filePath, clientFile.modifiedAt, config))
+          } else {
             ops.push(uploadFile(filePath, clientFile.modifiedAt, app.vault, config))
+          }
         } else {
-            ops.push(clientDelete(filePath, app.vault))
+          ops.push(clientDelete(filePath, clientFile.dir, app.vault))
         }
         continue
       } 
@@ -50,13 +54,25 @@ export async function sync(app: App, config: Reactive<Config>) {
       }
 
       if(clientFile.modifiedAt > serverFile.modifiedAt) {
-        ops.push(uploadFile(filePath, clientFile.modifiedAt, app.vault, config))
+        if (clientFile.dir) {
+          ops.push(uploadDir(filePath, clientFile.modifiedAt, config))
+        } else {
+          ops.push(uploadFile(filePath, clientFile.modifiedAt, app.vault, config))
+        }
       } else if (clientFile.modifiedAt < serverFile.modifiedAt) {
-        ops.push(downloadFile(filePath, app.vault, config))
+        if (clientFile.dir) {
+          ops.push(createDir(filePath, app.vault))
+        } else {
+          ops.push(downloadFile(filePath, app.vault, config))
+        }
       }
     } else {
       if(serverFile.modifiedAt > config.lastSynced) {
-        ops.push(downloadFile(filePath, app.vault, config))
+        if (serverFile.dir) {
+          ops.push(createDir(filePath, app.vault))
+        } else {
+          ops.push(downloadFile(filePath, app.vault, config))
+        }
       } else {
         ops.push(serverDelete(filePath, Date.now(), config))
       }
@@ -69,9 +85,13 @@ export async function sync(app: App, config: Reactive<Config>) {
     const serverFile = serverState[filePath]
     if(!serverFile) {
       if (clientFile.modifiedAt > config.lastSynced) {
-        ops.push(uploadFile(filePath, clientFile.modifiedAt, app.vault, config))
+        if (clientFile.dir) {
+          ops.push(uploadDir(filePath, clientFile.modifiedAt, config))
+        } else {
+          ops.push(uploadFile(filePath, clientFile.modifiedAt, app.vault, config))
+        }
       } else {
-        ops.push(clientDelete(filePath, app.vault))
+        ops.push(clientDelete(filePath, clientFile.dir, app.vault))
       }
     } 
   }
@@ -85,14 +105,15 @@ export async function sync(app: App, config: Reactive<Config>) {
 type ServerState = {
   [path: string]: {
     hash: string
-    modifiedAt: number,
+    modifiedAt: number
     deleted: boolean
+    dir: boolean
   }
 }
 
 async function serverDelete(filePath: string, modifiedAt: number, config: Config) {
   const resp = await fetch(config.serverUrl + '/vault/' + config.vaultId + '/file/' + filePath, {
-    method: "DEL",
+    method: "DELETE",
     headers: {
       "X-Modified-At": modifiedAt.toString()
     }
@@ -103,9 +124,18 @@ async function serverDelete(filePath: string, modifiedAt: number, config: Config
   }
 }
 
-async function clientDelete(filePath: string, vault: Vault) {
+async function clientDelete(filePath: string, dir: boolean, vault: Vault) {
   const fullPath = path.join(getVaultRoot(vault), filePath)
-  await fs.promises.rm(fullPath)
+  if (dir) {
+    await fs.promises.rmdir(fullPath)
+  } else {
+    await fs.promises.rm(fullPath)
+  }
+}
+
+async function createDir(dirPath: string, vault: Vault) {
+  const fullPath = path.join(getVaultRoot(vault), dirPath)
+  await fs.promises.mkdir(fullPath)
 }
 
 async function downloadFile(filePath: string, vault: Vault, config: Config) {
@@ -118,6 +148,20 @@ async function downloadFile(filePath: string, vault: Vault, config: Config) {
   }
 
   await pipeline(resp.body as ReadableStream, fs.createWriteStream(fullPath))
+}
+
+async function uploadDir(dirPath: string, modifiedAt: number, config: Config) {
+  const resp = await fetch(config.serverUrl + '/vault/' + config.vaultId + '/file/' + dirPath, {
+    method: "POST",
+    headers: {
+      "X-Modified-At": modifiedAt.toString(),
+      "X-Is-Dir": "true"
+    }
+  })
+  if (!resp.ok) {
+    throw Error(resp.statusText)
+  }
+
 }
 
 async function uploadFile(filePath: string, modifiedAt: number, vault: Vault, config: Config) {
@@ -147,23 +191,30 @@ async function getServerState(config: Config): Promise<ServerState> {
   return await resp.json() as ServerState
 }
 
-async function getClientState(vault: Vault): Promise<Map<string, {hash: string, modifiedAt: number}>> {
-  let files = vault.getFiles()
+async function getClientState(vault: Vault): Promise<Map<string, {hash: string, modifiedAt: number, dir: boolean }>> {
   let vaultRoot = getVaultRoot(vault)
-  console.log(vaultRoot)
   
-  let bufferPromises = files.map(file => {
-    const filePath = path.join(vaultRoot, file.path)
-    console.log(filePath)
-    return fs.promises.readFile(filePath)
-  })
-  let buffers = await Promise.all(bufferPromises)
-  let clientState: Map<string, {hash: string, modifiedAt: number}> = new Map()
-  buffers.forEach((b, i) => {
-    clientState.set(files[i]!.path, {
-      hash: crypto.hash('sha256', b),
-      modifiedAt: files[i]!.stat.mtime
+  let clientState: Map<string, {hash: string, modifiedAt: number, dir: boolean}> = new Map()
+
+  await Promise.all(vault.getAllFolders().map(async (dir) => {
+    const fullPath = path.join(vaultRoot, dir.path)
+    const stat = await fs.promises.stat(fullPath)
+    clientState.set(dir.path, {
+      hash: "",
+      modifiedAt: stat.ctime.getTime(),
+      dir: true,
     })
-  })
+  }))
+
+  await Promise.all(vault.getFiles().map(async (file) => {
+    const filePath = path.join(vaultRoot, file.path)
+    const buffer = await fs.promises.readFile(filePath)
+    clientState.set(file.path, {
+      hash: crypto.hash('sha256', buffer),
+      modifiedAt: file.stat.mtime,
+      dir: false
+    })
+  }))
+  
   return clientState
 }

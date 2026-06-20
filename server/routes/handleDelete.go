@@ -4,11 +4,10 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 )
 
-func (s *Server) HandleDeleteFile(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	vaultId := r.PathValue("id")
 	filePath := r.PathValue("path")
 
@@ -36,22 +35,12 @@ func (s *Server) HandleDeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parent := filepath.Dir(fullPath)
-	for parent != vaultPath {
-		entries, err := os.ReadDir(parent)
+	if record != nil {
+		record.Deleted = true
+		err = s.insertOrUpdateRecord(vaultId, filePath, *record)
 		if err != nil {
-			break
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		if len(entries) > 0 {
-			break
-		}
-		os.Remove(parent)
-		parent = filepath.Dir(parent)
-	}
-
-	err = s.insertOrUpdateRecord(vaultId, filePath, modifiedAt, true)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }

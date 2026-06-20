@@ -23,8 +23,8 @@ func main() {
 	mux.HandleFunc("POST /vault", s.HandleCreateVault)
 	mux.HandleFunc("GET /vault", s.HandleListVaults)
 	mux.HandleFunc("GET /vault/{id}/state", s.HandleState)
-	mux.HandleFunc("POST /vault/{id}/file/{path...}", s.HandleUploadFile)
-	mux.HandleFunc("DEL /vault/{id}/file/{path...}", s.HandleDeleteFile)
+	mux.HandleFunc("POST /vault/{id}/file/{path...}", s.HandleUpload)
+	mux.HandleFunc("DELETE /vault/{id}/file/{path...}", s.HandleDelete)
 	mux.HandleFunc("GET /vault/{id}/file/{path...}", s.HandleReadFile)
 
 	log.Println("listening on port :8080")
@@ -36,8 +36,8 @@ func main() {
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DEL, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Modified-At")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Modified-At, X-Is-Dir")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)

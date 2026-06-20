@@ -21,6 +21,7 @@ func (s *Server) initDb() error {
             vault_id    TEXT NOT NULL,
             modified_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
             deleted     INTEGER NOT NULL DEFAULT 0,
+            dir      	INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (vault_id, path)
         );
     `)
@@ -52,13 +53,13 @@ func (s *Server) getDbState(vaultId string) (map[string]StateEntry, error) {
 }
 
 func (s *Server) getExistingRecord(vaultId, path string) (*StateEntry, error) {
-	row := s.db.QueryRow("SELECT modified_at, deleted FROM files WHERE vault_id = ? AND path = ?",
+	row := s.db.QueryRow("SELECT modified_at, deleted, dir FROM files WHERE vault_id = ? AND path = ?",
 		vaultId,
 		path,
 	)
 
 	var record StateEntry
-	err := row.Scan(&record.ModifiedAt, &record.Deleted)
+	err := row.Scan(&record.ModifiedAt, &record.Deleted, &record.Dir)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -69,12 +70,13 @@ func (s *Server) getExistingRecord(vaultId, path string) (*StateEntry, error) {
 	return &record, nil
 }
 
-func (s *Server) insertOrUpdateRecord(vaultId, path string, modifiedAt int64, deleted bool) error {
-	_, err := s.db.Exec("INSERT OR REPLACE INTO files (path, vault_id, modified_at, deleted) VALUES (?, ?, ?, ?)",
-		path,
+func (s *Server) insertOrUpdateRecord(vaultId, filePath string, state StateEntry) error {
+	_, err := s.db.Exec("INSERT OR REPLACE INTO files (vault_id, path, modified_at, deleted, dir) VALUES (?, ?, ?, ?, ?)",
 		vaultId,
-		modifiedAt,
-		deleted,
+		filePath,
+		state.ModifiedAt,
+		state.Deleted,
+		state.Dir,
 	)
 
 	return err

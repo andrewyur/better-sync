@@ -9,8 +9,8 @@ Uses a last-write-wins synchronization model, based on file modified timestamps.
 - No database setup: server manages its own sqlite database
 
 ## Easy to use
-- 3 click setup: server 
-- No manual conflict resolution
+- 3 click setup: server URL, vault selection, and sync frequency
+- Set and Forget: No manual conflict resolution
 
 ## Setup Instructions
 
@@ -28,3 +28,4 @@ Uses a last-write-wins synchronization model, based on file modified timestamps.
 - [ ] Publish plugin
 - [ ] Publish docker image
 - [ ] flesh out readme
+- [ ] set up CI/CD

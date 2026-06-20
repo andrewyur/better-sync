@@ -18,6 +18,7 @@ Uses a last-write-wins synchronization model, based on file modification timesta
 
 - [x] Server/Client: better handling for folders
 - [ ] Server/Client: clean up code
+- [ ] Server: test tombstone removal
 - [ ] Server: add port selection, read from config file & env vars
 - [ ] Server: secret based auth & tls
 - [ ] Client: sync on lost focus, app load
@@ -26,6 +27,7 @@ Uses a last-write-wins synchronization model, based on file modification timesta
 - [ ] Client: widget indicating when syncing, sync status
 - [ ] Client: remove specific paths from esbuild config
 - [ ] Publish plugin
+- [ ] Test on mobile
 - [ ] Publish docker image
 - [ ] flesh out readme
 - [ ] set up CI/CD

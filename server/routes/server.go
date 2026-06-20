@@ -30,7 +30,7 @@ func NewServer(
 	err = s.initDb()
 
 	go s.startCleanup()
-	
+
 	return s, err
 }
 

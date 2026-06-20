@@ -90,7 +90,7 @@ func (s *Server) deleteRecord(vaultId, path string) error {
 
 func (s *Server) clearTombstones() error {
 	_, err := s.db.Exec("DELETE FROM files WHERE deleted = 1 AND modified_at < ?",
-		time.Now().Add(-30*24*time.Hour).Unix(),
+		time.Now().Add(-30*24*time.Hour).UnixMilli(),
 	)
 
 	return newRouteError(err, "clearTombstones")

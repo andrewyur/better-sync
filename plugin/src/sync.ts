@@ -28,7 +28,7 @@ function getVaultRoot(vault: Vault) {
 export async function sync(app: App, config: Reactive<Config>) {
   const [clientState, serverState] = await Promise.all([getClientState(app.vault), getServerState(config)])
 
-  console.log(clientState, serverState)
+  console.log(clientState, serverState, config.lastSynced)
 
   const ops: Promise<void>[] = []
   const urlPrefix = config.serverUrl + '/vault/' + config.vaultId + '/file/'
@@ -50,8 +50,10 @@ export async function sync(app: App, config: Reactive<Config>) {
       if (serverFile.deleted) {
         if (clientFile.modifiedAt > serverFile.modifiedAt) {
           ops.push(uploadEntry(filePath, clientFile, vaultRoot, urlPrefix))
-        } else {
+        } else if(clientFile.modifiedAt < serverFile.modifiedAt) {
           ops.push(clientDelete(filePath, clientFile, vaultRoot))
+        } else {
+          console.error("ERROR!!! INCONSISTENT WRITE OCCURRED!")
         }
         continue
       }
@@ -66,11 +68,13 @@ export async function sync(app: App, config: Reactive<Config>) {
         ops.push(downloadEntry(filePath, clientFile, vaultRoot, urlPrefix))
       }
     } else {
-      if (serverFile.modifiedAt > config.lastSynced) {
-        ops.push(downloadEntry(filePath, serverFile, vaultRoot, urlPrefix))
-      } else {
-        serverFile.modifiedAt = Date.now()
-        ops.push(serverDelete(filePath, serverFile, urlPrefix))
+      if (!serverFile.deleted) {
+        console.log(filePath, serverFile.modifiedAt, config.lastSynced, serverFile.modifiedAt > config.lastSynced)
+        if (serverFile.modifiedAt > config.lastSynced) {
+          ops.push(downloadEntry(filePath, serverFile, vaultRoot, urlPrefix))
+        } else {
+          ops.push(serverDelete(filePath, serverFile, urlPrefix))
+        }
       }
     }
   }
@@ -96,10 +100,11 @@ export async function sync(app: App, config: Reactive<Config>) {
 
 
 async function serverDelete(filePath: string, state: StateEntry, urlPrefix: string) {
+  console.log("serverDelete", filePath, state)
   const resp = await fetch(urlPrefix + filePath, {
     method: "DELETE",
     headers: {
-      "X-Modified-At": state.modifiedAt.toString()
+      "X-Modified-At": Date.now().toString()
     }
   })
 
@@ -109,18 +114,16 @@ async function serverDelete(filePath: string, state: StateEntry, urlPrefix: stri
 }
 
 async function clientDelete(filePath: string, state: StateEntry, vaultRoot: string) {
+  console.log("clientDelete", filePath, state)
   const fullPath = path.join(vaultRoot, filePath)
-  if (state.dir) {
-    await fs.promises.rmdir(fullPath)
-  } else {
-    await fs.promises.rm(fullPath)
-  }
+  await fs.promises.rm(fullPath, {recursive: true, force: true})
 }
 
 async function downloadEntry(filePath: string, state: StateEntry, vaultRoot: string, urlPrefix: string) {
+  console.log("downloadEntry", filePath, state)
   const fullPath = path.join(vaultRoot, filePath)
 
-  if (state.dir) {
+  if (!state.dir) {
     await fs.promises.mkdir(path.dirname(fullPath), { recursive: true })
 
     const resp = await fetch(urlPrefix + filePath)
@@ -130,11 +133,14 @@ async function downloadEntry(filePath: string, state: StateEntry, vaultRoot: str
 
     await pipeline(resp.body as ReadableStream, fs.createWriteStream(fullPath))
   } else {
-    await fs.promises.mkdir(fullPath)
+    if (!fs.existsSync(fullPath)) {
+      await fs.promises.mkdir(fullPath)
+    }
   }
 }
 
 async function uploadEntry(filePath: string, state: StateEntry, vaultRoot: string, urlPrefix: string) {
+  console.log("uploadEntry", filePath, state)
   const fullPath = path.join(vaultRoot, filePath)
 
   const resp = await fetch(urlPrefix + filePath, {
@@ -170,6 +176,7 @@ async function getClientState(vault: Vault): Promise<State> {
     ...vault.getAllFolders().map(async (dir) => {
       const fullPath = path.join(vaultRoot, dir.path)
       const stat = await fs.promises.stat(fullPath)
+      // use ctime here instead of mtime, folders cannot be meaningfully modified for our purposes
       clientState[dir.path] = {
         hash: "",
         modifiedAt: stat.ctime.getTime(),

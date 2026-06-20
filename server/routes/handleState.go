@@ -43,7 +43,7 @@ func (s *Server) HandleState(w http.ResponseWriter, r *http.Request) {
 			}
 
 			entry := StateEntry{
-				ModifiedAt: stat.ModTime().Unix(),
+				ModifiedAt: stat.ModTime().UnixMilli(),
 				Dir:        state.Dir,
 			}
 			err = s.insertOrUpdateRecord(vaultId, filePath, entry)
@@ -55,8 +55,8 @@ func (s *Server) HandleState(w http.ResponseWriter, r *http.Request) {
 			dbState[filePath] = entry
 		}
 	}
-	for filePath := range dbState {
-		if _, ok := fileState[filePath]; !ok {
+	for filePath, state := range dbState {
+		if _, ok := fileState[filePath]; !ok && !state.Deleted {
 			err := s.deleteRecord(vaultId, filePath)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

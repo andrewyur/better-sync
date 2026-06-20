@@ -29,7 +29,11 @@ func (s *Server) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	vaultPath := path.Join(s.dataDir, "vaults", vaultId)
 	fullPath := path.Join(vaultPath, filePath)
-	err = os.Remove(fullPath)
+	if fullPath == vaultPath {
+		http.Error(w, "tried to delete entire vault", http.StatusInternalServerError)
+		return
+	}
+	err = os.RemoveAll(fullPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -37,6 +41,7 @@ func (s *Server) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	if record != nil {
 		record.Deleted = true
+		record.ModifiedAt = modifiedAt
 		err = s.insertOrUpdateRecord(vaultId, filePath, *record)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

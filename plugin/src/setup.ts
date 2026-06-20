@@ -40,7 +40,7 @@ export class SetupModal extends Modal {
     urlInput() {
         let url: string = '';
 
-        const urlInput = new Setting(this.contentEl)
+        new Setting(this.contentEl)
             .setName("Server URL")
             .setDesc("The URL to your better-sync server")
             .addText(text => text
@@ -55,9 +55,9 @@ export class SetupModal extends Modal {
                 .onClick(async () => {
                     btn.setButtonText("Loading...")
                     const res = await testUrl(url);
-                    if (res.ok) {
+                    if (!res.ok) {
                         btn.setButtonText("Next")
-                        new Notice("Could not connect to server:\n" + res);
+                        new Notice("Could not connect to server:\n" + res.error);
                     } else {
                         this.config.serverUrl = url;
                         this.navigateTo(this.vaultChoice)
@@ -98,8 +98,8 @@ export class SetupModal extends Modal {
                 .onClick(async () => {
                     btn.setButtonText("Loading...")
                     let res = await createVault(this.config.serverUrl, vaultId)
-                    if (res.ok) {
-                        new Notice("Could not create new vault:\n" + res)
+                    if (!res.ok) {
+                        new Notice("Could not create new vault:\n" + res.error)
                         btn.setButtonText("Next")
                     } else {
                         this.config.vaultId = vaultId

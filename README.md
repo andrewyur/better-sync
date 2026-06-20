@@ -2,7 +2,7 @@
 
 Simple & easy self-hosted obsidian sync. Everything necessary for a 1-person multi-device setup, and nothing more.
 
-Uses a last-write-wins synchronization model, based on file modified timestamps.
+Uses a last-write-wins synchronization model, based on file modification timestamps.
 
 ## Easy to deploy
 - No need for docker: self-contained binaries for every platform

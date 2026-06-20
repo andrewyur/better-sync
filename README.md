@@ -6,7 +6,7 @@ Uses a last-write-wins synchronization model, based on file modified timestamps.
 
 ## Easy to deploy
 - No need for docker: self-contained binaries for every platform
-- No database needed: server manages its own sqlite database
+- No database setup: server manages its own sqlite database
 
 ## Easy to use
 - 3 click setup: server 
